@@ -101,7 +101,6 @@ const Checkout = () => {
           });
           orderNumRef.current = result.orderNum;
 
-          // Optionnel : vérifier de façon asynchrone le statut.
           setTimeout(async () => {
             try {
               const s = await verifierStatutCommande(result.orderNum);
@@ -125,9 +124,10 @@ const Checkout = () => {
             }
           }, 5000);
         } else {
+          // result.success === false ⇒ result.message existe
           toast({
             title: "Échec du paiement",
-            description: result.message,
+            description: result.message ?? "Échec du paiement.",
             variant: "destructive",
           });
         }
