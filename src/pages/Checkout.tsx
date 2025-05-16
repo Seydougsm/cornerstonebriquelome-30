@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -123,8 +122,7 @@ const Checkout = () => {
               // Non bloquant : si on ne parvient pas à vérifier, rien à faire
             }
           }, 5000);
-        } else {
-          // result.success === false ⇒ result.message existe
+        } else if (result.success === false) {
           toast({
             title: "Échec du paiement",
             description: result.message ?? "Échec du paiement.",
@@ -287,4 +285,3 @@ const Checkout = () => {
 };
 
 export default Checkout;
-
