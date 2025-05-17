@@ -22,7 +22,7 @@ const CheckoutPage = () => {
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
-  const [mobileMoney, setMobileMoney] = useState(""); // Champ unique visible
+  const [mobileMoney, setMobileMoney] = useState("");
   const orderNumRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -50,7 +50,7 @@ const CheckoutPage = () => {
     orderNumRef.current = null;
   };
 
-  // Handler unique pour déclencher le paiement Cash Pay via API Semoa
+  // Handler pour le paiement Cash Pay via API Semoa
   const handleSemoaPayment = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsProcessing(true);
@@ -95,7 +95,7 @@ const CheckoutPage = () => {
             const s = await verifierStatutCommande(result.orderNum);
             if (s.state === 4 || s.state === "4") {
               toast({
-                title: "Paiement confirmé !",
+                title: "Paiement confirmé !",
                 description: "Votre commande a été payée avec succès.",
               });
               clearCart();
@@ -156,7 +156,7 @@ const CheckoutPage = () => {
                 setAddress={setAddress}
                 setNotes={setNotes}
               />
-              {/* Bloc unique pour entrée du numéro Mobile Money */}
+              {/* Bloc pour l'entrée du numéro Cash Pay */}
               <div className="bg-white p-6 rounded-lg shadow-md">
                 <h2 className="text-lg font-bold text-cornerstone-blue mb-4">Paiement Cash Pay</h2>
                 <div className="space-y-2 mb-4">
@@ -197,4 +197,3 @@ const CheckoutPage = () => {
 };
 
 export default CheckoutPage;
-
