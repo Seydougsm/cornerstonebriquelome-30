@@ -1,14 +1,14 @@
+
 import { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Textarea } from "@/components/ui/textarea";
 import { useCart } from "../contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { CreditCard, Wallet, Check } from "lucide-react";
 import { obtenirToken, envoyerPaiement, verifierStatutCommande } from "@/utils/semoa";
+import ContactInfoForm from "@/components/checkout/ContactInfoForm";
+import DeliveryAddressForm from "@/components/checkout/DeliveryAddressForm";
+import PaymentMethodSection from "@/components/checkout/PaymentMethodSection";
+import OrderSummary from "@/components/checkout/OrderSummary";
 
 const Checkout = () => {
   const { cart, getTotalPrice, clearCart } = useCart();
@@ -29,7 +29,6 @@ const Checkout = () => {
   const orderNumRef = useRef<string | null>(null);
 
   useEffect(() => {
-    // On obtient le token à l’arrivée sur la page.
     obtenirToken().catch(() =>
       toast({
         title: "Erreur API",
@@ -37,14 +36,12 @@ const Checkout = () => {
         variant: "destructive",
       })
     );
-    // Rediriger si panier vide
     if (cart.length === 0) {
       navigate("/panier");
     }
     // eslint-disable-next-line
   }, []);
 
-  // Nettoyage après paiement
   const clearForm = () => {
     setFirstName("");
     setLastName("");
@@ -56,12 +53,10 @@ const Checkout = () => {
     orderNumRef.current = null;
   };
 
-  // Handler principal de paiement via Semoa
   const handleSemoaPayment = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsProcessing(true);
 
-    // Validation champs obligatoires
     if (!firstName || !lastName || !email || !phone || !address) {
       toast({
         title: "Champs obligatoires manquants",
@@ -72,7 +67,6 @@ const Checkout = () => {
       return;
     }
 
-    // Vérification simple du numéro mobile money
     const regexIntl = /^\+228\d{8}$/;
     if (!regexIntl.test(mobileMoney)) {
       toast({
@@ -83,15 +77,13 @@ const Checkout = () => {
       setIsProcessing(false);
       return;
     }
-    // Calcul du montant total
     const montant = getTotalPrice();
 
-    // Appel API Semoa ici
     try {
       const result = await envoyerPaiement({
         amount: montant,
         recipient: mobileMoney,
-        service: "FLOOZ", // Personnalisable selon les besoins
+        service: "FLOOZ",
       });
       if (result.success) {
         toast({
@@ -148,86 +140,30 @@ const Checkout = () => {
       <div className="container mx-auto px-4">
         <h1 className="title text-center mb-8">Paiement</h1>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Formulaire */}
           <div className="lg:col-span-2">
             <form className="space-y-6" autoComplete="off" onSubmit={() => {}}>
-              {/* Infos contact */}
-              <div className="bg-white p-6 rounded-lg shadow-md">
-                <h2 className="text-lg font-bold text-cornerstone-blue mb-4">Informations de contact</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="firstName">Prénom</Label>
-                    <Input id="firstName" required placeholder="Votre prénom" value={firstName} onChange={e => setFirstName(e.target.value)} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="lastName">Nom</Label>
-                    <Input id="lastName" required placeholder="Votre nom" value={lastName} onChange={e => setLastName(e.target.value)} />
-                  </div>
-                </div>
-                <div className="space-y-2 mt-4">
-                  <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" required placeholder="votre@email.com" value={email} onChange={e => setEmail(e.target.value)} />
-                </div>
-                <div className="space-y-2 mt-4">
-                  <Label htmlFor="phone">Téléphone</Label>
-                  <Input id="phone" required placeholder="Votre numéro de téléphone" value={phone} onChange={e => setPhone(e.target.value)} />
-                </div>
-              </div>
-              {/* Adresse */}
-              <div className="bg-white p-6 rounded-lg shadow-md">
-                <h2 className="text-lg font-bold text-cornerstone-blue mb-4">Adresse de livraison</h2>
-                <div className="space-y-2">
-                  <Label htmlFor="address">Adresse complète</Label>
-                  <Textarea id="address" required placeholder="Votre adresse de livraison" value={address} onChange={e => setAddress(e.target.value)} />
-                </div>
-                <div className="space-y-2 mt-4">
-                  <Label htmlFor="notes">Instructions spéciales (facultatif)</Label>
-                  <Textarea id="notes" placeholder="Instructions particulières pour la livraison" value={notes} onChange={e => setNotes(e.target.value)} />
-                </div>
-              </div>
-              {/* Paiement */}
-              <div className="bg-white p-6 rounded-lg shadow-md">
-                <h2 className="text-lg font-bold text-cornerstone-blue mb-4">Méthode de paiement</h2>
-                <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} className="space-y-4">
-                  <div className="flex items-center space-x-2 border p-4 rounded-md cursor-pointer hover:border-cornerstone-orange">
-                    <RadioGroupItem id="mobile" value="mobile" />
-                    <Label htmlFor="mobile" className="flex items-center cursor-pointer flex-1">
-                      <Wallet className="mr-2 text-cornerstone-orange" size={20} />
-                      <div>
-                        <p className="font-medium">Mobile Money</p>
-                        <p className="text-xs text-cornerstone-gray">Paiement via T-Money, Flooz, etc.</p>
-                      </div>
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2 border p-4 rounded-md cursor-pointer hover:border-cornerstone-orange opacity-60 pointer-events-none">
-                    <RadioGroupItem id="card" value="card" disabled />
-                    <Label htmlFor="card" className="flex items-center cursor-not-allowed flex-1">
-                      <CreditCard className="mr-2 text-cornerstone-orange" size={20} />
-                      <div>
-                        <p className="font-medium">Carte bancaire</p>
-                        <p className="text-xs text-cornerstone-gray">Prochainement disponible</p>
-                      </div>
-                    </Label>
-                  </div>
-                </RadioGroup>
-                {paymentMethod === "mobile" && (
-                  <div className="mt-4 space-y-4 p-4 border border-dashed rounded-md">
-                    <div className="space-y-2">
-                      <Label htmlFor="mobileNumber">Numéro Mobile Money</Label>
-                      <Input
-                        id="mobileNumber"
-                        placeholder="Ex: +228 XX XX XX XX"
-                        value={mobileMoney}
-                        onChange={e => setMobileMoney(e.target.value)}
-                        required
-                      />
-                    </div>
-                    <p className="text-xs text-cornerstone-gray">
-                      Vous recevrez une notification sur votre téléphone pour confirmer le paiement.
-                    </p>
-                  </div>
-                )}
-              </div>
+              <ContactInfoForm
+                firstName={firstName}
+                lastName={lastName}
+                email={email}
+                phone={phone}
+                setFirstName={setFirstName}
+                setLastName={setLastName}
+                setEmail={setEmail}
+                setPhone={setPhone}
+              />
+              <DeliveryAddressForm
+                address={address}
+                notes={notes}
+                setAddress={setAddress}
+                setNotes={setNotes}
+              />
+              <PaymentMethodSection
+                paymentMethod={paymentMethod}
+                setPaymentMethod={setPaymentMethod}
+                mobileMoney={mobileMoney}
+                setMobileMoney={setMobileMoney}
+              />
               <div className="flex gap-4">
                 <Button
                   type="button"
@@ -237,52 +173,11 @@ const Checkout = () => {
                 >
                   {isProcessing ? <>Traitement en cours...</> : <>Payer avec Cash Pay</>}
                 </Button>
-                {/* Si jamais on souhaite garder "Confirmer la commande" pour autre traitement, on peut l'ajouter ici */}
               </div>
             </form>
           </div>
-          {/* Résumé */}
           <div className="lg:col-span-1">
-            <div className="bg-white p-6 rounded-lg shadow-md sticky top-6">
-              <h2 className="text-lg font-bold text-cornerstone-blue mb-4">Résumé de la commande</h2>
-              <div className="space-y-4 mb-6">
-                {cart.map((item) => (
-                  <div key={item.id} className="flex justify-between border-b pb-3">
-                    <div>
-                      <p className="font-medium text-cornerstone-blue">
-                        {item.name} <span className="text-cornerstone-gray">x {item.quantity}</span>
-                      </p>
-                      <p className="text-xs text-cornerstone-gray">
-                        {item.type} - {item.size}
-                      </p>
-                    </div>
-                    <span className="font-medium">{item.price * item.quantity} FCFA</span>
-                  </div>
-                ))}
-              </div>
-              <div className="space-y-2 mb-6">
-                <div className="flex justify-between">
-                  <span className="text-cornerstone-gray">Sous-total:</span>
-                  <span className="font-medium">{getTotalPrice()} FCFA</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-cornerstone-gray">Livraison:</span>
-                  <span className="text-cornerstone-gray">À définir</span>
-                </div>
-              </div>
-              <div className="flex justify-between font-bold border-t pt-2 mb-6">
-                <span>Total TTC:</span>
-                <span className="text-cornerstone-orange">{getTotalPrice()} FCFA</span>
-              </div>
-              <div className="bg-gray-50 p-4 rounded-md">
-                <div className="flex items-start">
-                  <Check size={16} className="text-green-500 mt-1 mr-2" />
-                  <p className="text-xs text-cornerstone-gray">
-                    En passant commande, vous acceptez nos conditions générales de vente et reconnaissez avoir pris connaissance de notre politique de confidentialité.
-                  </p>
-                </div>
-              </div>
-            </div>
+            <OrderSummary cart={cart} getTotalPrice={getTotalPrice} />
           </div>
         </div>
       </div>
