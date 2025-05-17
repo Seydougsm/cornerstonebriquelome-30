@@ -13,7 +13,7 @@ const CheckoutPage = () => {
   const { cart, getTotalPrice, clearCart } = useCart();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // Champs formulaire
   const [firstName, setFirstName] = useState("");
@@ -22,8 +22,7 @@ const CheckoutPage = () => {
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
-  const [mobileMoney, setMobileMoney] = useState(""); // Champ toujours affiché mais sans section radio
-  
+  const [mobileMoney, setMobileMoney] = useState(""); // Champ unique visible
   const orderNumRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -51,12 +50,12 @@ const CheckoutPage = () => {
     orderNumRef.current = null;
   };
 
-  // Handler principal du paiement avec Semoa
+  // Handler unique pour déclencher le paiement Cash Pay via API Semoa
   const handleSemoaPayment = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsProcessing(true);
 
-    if (!firstName || !lastName || !email || !phone || !address) {
+    if (!firstName || !lastName || !email || !phone || !address || !mobileMoney) {
       toast({
         title: "Champs obligatoires manquants",
         description: "Veuillez remplir toutes les informations nécessaires.",
@@ -110,7 +109,7 @@ const CheckoutPage = () => {
               });
             }
           } catch {
-            // Silencieux si erreur de vérification
+            // Erreur silencieuse
           }
         }, 5000);
       } else if (result.success === false) {
@@ -157,8 +156,9 @@ const CheckoutPage = () => {
                 setAddress={setAddress}
                 setNotes={setNotes}
               />
+              {/* Bloc unique pour entrée du numéro Mobile Money */}
               <div className="bg-white p-6 rounded-lg shadow-md">
-                <h2 className="text-lg font-bold text-cornerstone-blue mb-4">Paiement</h2>
+                <h2 className="text-lg font-bold text-cornerstone-blue mb-4">Paiement Cash Pay</h2>
                 <div className="space-y-2 mb-4">
                   <label htmlFor="mobileNumber" className="block text-sm font-medium text-cornerstone-blue">
                     Numéro Mobile Money
@@ -180,7 +180,7 @@ const CheckoutPage = () => {
                   type="submit"
                   disabled={isProcessing}
                   variant="orange"
-                  className="w-full"
+                  className="w-full text-base h-12 text-white font-bold"
                 >
                   {isProcessing ? <>Traitement en cours...</> : <>Payer avec Cash Pay</>}
                 </Button>
@@ -197,3 +197,4 @@ const CheckoutPage = () => {
 };
 
 export default CheckoutPage;
+
