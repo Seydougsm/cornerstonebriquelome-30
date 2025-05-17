@@ -57,10 +57,11 @@ const Checkout = () => {
   };
 
   // Handler principal de paiement via Semoa
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSemoaPayment = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsProcessing(true);
 
+    // Validation champs obligatoires
     if (!firstName || !lastName || !email || !phone || !address) {
       toast({
         title: "Champs obligatoires manquants",
@@ -71,74 +72,71 @@ const Checkout = () => {
       return;
     }
 
-    if (paymentMethod === "mobile") {
-      // Vérification simple du numéro mobile money
-      const regexIntl = /^\+228\d{8}$/;
-      if (!regexIntl.test(mobileMoney)) {
-        toast({
-          title: "Numéro incorrect",
-          description: "Le numéro Mobile Money doit être au format +228XXXXXXXX.",
-          variant: "destructive",
-        });
-        setIsProcessing(false);
-        return;
-      }
-      // Calcul du montant total
-      const montant = getTotalPrice();
-
-      // Appel API Semoa ici
-      try {
-        const result = await envoyerPaiement({
-          amount: montant,
-          recipient: mobileMoney,
-          service: "FLOOZ", // Personnalisable selon les besoins/minute
-        });
-        if (result.success) {
-          toast({
-            title: "Paiement initié ✔",
-            description: `Commande n° ${result.orderNum} – Attente de validation Mobile Money...`,
-          });
-          orderNumRef.current = result.orderNum;
-
-          setTimeout(async () => {
-            try {
-              const s = await verifierStatutCommande(result.orderNum);
-              if (s.state === 4 || s.state === "4") {
-                toast({
-                  title: "Paiement confirmé !",
-                  description: "Votre commande a été payée avec succès.",
-                });
-                clearCart();
-                clearForm();
-                navigate("/");
-              } else {
-                toast({
-                  title: "Paiement en attente",
-                  description:
-                    "Le paiement est en cours de traitement. Vous pouvez vérifier le statut dans votre historique.",
-                });
-              }
-            } catch {
-              // Non bloquant : si on ne parvient pas à vérifier, rien à faire
-            }
-          }, 5000);
-        } else if (result.success === false) {
-          toast({
-            title: "Échec du paiement",
-            description: result.message ?? "Échec du paiement.",
-            variant: "destructive",
-          });
-        }
-      } catch (err: any) {
-        toast({
-          title: "Erreur API",
-          description: "Impossible d'effectuer l'opération. Réessayez plus tard.",
-          variant: "destructive",
-        });
-      }
+    // Vérification simple du numéro mobile money
+    const regexIntl = /^\+228\d{8}$/;
+    if (!regexIntl.test(mobileMoney)) {
+      toast({
+        title: "Numéro incorrect",
+        description: "Le numéro Mobile Money doit être au format +228XXXXXXXX.",
+        variant: "destructive",
+      });
       setIsProcessing(false);
+      return;
     }
-    // Extension possible : gestion carte bancaire (hors périmètre pour cette intégration)
+    // Calcul du montant total
+    const montant = getTotalPrice();
+
+    // Appel API Semoa ici
+    try {
+      const result = await envoyerPaiement({
+        amount: montant,
+        recipient: mobileMoney,
+        service: "FLOOZ", // Personnalisable selon les besoins
+      });
+      if (result.success) {
+        toast({
+          title: "Paiement initié ✔",
+          description: `Commande n° ${result.orderNum} – Attente de validation Mobile Money...`,
+        });
+        orderNumRef.current = result.orderNum;
+
+        setTimeout(async () => {
+          try {
+            const s = await verifierStatutCommande(result.orderNum);
+            if (s.state === 4 || s.state === "4") {
+              toast({
+                title: "Paiement confirmé !",
+                description: "Votre commande a été payée avec succès.",
+              });
+              clearCart();
+              clearForm();
+              navigate("/");
+            } else {
+              toast({
+                title: "Paiement en attente",
+                description:
+                  "Le paiement est en cours de traitement. Vous pouvez vérifier le statut dans votre historique.",
+              });
+            }
+          } catch {
+            // Non bloquant : si on ne parvient pas à vérifier, rien à faire
+          }
+        }, 5000);
+      } else if (result.success === false) {
+        toast({
+          title: "Échec du paiement",
+          description: result.message ?? "Échec du paiement.",
+          variant: "destructive",
+        });
+      }
+    } catch (err: any) {
+      toast({
+        title: "Erreur API",
+        description: "Impossible d'effectuer l'opération. Réessayez plus tard.",
+        variant: "destructive",
+      });
+    }
+    setIsProcessing(false);
   };
 
   if (cart.length === 0) {
@@ -152,7 +150,7 @@ const Checkout = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Formulaire */}
           <div className="lg:col-span-2">
-            <form onSubmit={handleSubmit} className="space-y-6" autoComplete="off">
+            <form className="space-y-6" autoComplete="off" onSubmit={() => {}}>
               {/* Infos contact */}
               <div className="bg-white p-6 rounded-lg shadow-md">
                 <h2 className="text-lg font-bold text-cornerstone-blue mb-4">Informations de contact</h2>
@@ -230,9 +228,17 @@ const Checkout = () => {
                   </div>
                 )}
               </div>
-              <Button type="submit" disabled={isProcessing} className="w-full bg-cornerstone-orange hover:bg-cornerstone-orange/90 text-white">
-                {isProcessing ? <>Traitement en cours...</> : <>Confirmer la commande</>}
-              </Button>
+              <div className="flex gap-4">
+                <Button
+                  type="button"
+                  disabled={isProcessing}
+                  onClick={handleSemoaPayment}
+                  className="w-full bg-cornerstone-orange hover:bg-cornerstone-orange/90 text-white"
+                >
+                  {isProcessing ? <>Traitement en cours...</> : <>Payer avec Cash Pay</>}
+                </Button>
+                {/* Si jamais on souhaite garder "Confirmer la commande" pour autre traitement, on peut l'ajouter ici */}
+              </div>
             </form>
           </div>
           {/* Résumé */}
