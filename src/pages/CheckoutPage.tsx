@@ -7,14 +7,12 @@ import { useNavigate } from "react-router-dom";
 import { obtenirToken, envoyerPaiement, verifierStatutCommande } from "@/utils/semoa";
 import ContactInfoForm from "@/components/checkout/ContactInfoForm";
 import DeliveryAddressForm from "@/components/checkout/DeliveryAddressForm";
-import PaymentMethodSection from "@/components/checkout/PaymentMethodSection";
 import OrderSummary from "@/components/checkout/OrderSummary";
 
 const CheckoutPage = () => {
   const { cart, getTotalPrice, clearCart } = useCart();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [paymentMethod, setPaymentMethod] = useState<string>("mobile");
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
 
   // Champs formulaire
@@ -24,8 +22,8 @@ const CheckoutPage = () => {
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [notes, setNotes] = useState("");
-  const [mobileMoney, setMobileMoney] = useState("");
-  // Pour garder le numéro de commande si besoin de vérifier le statut
+  const [mobileMoney, setMobileMoney] = useState(""); // Champ toujours affiché mais sans section radio
+  
   const orderNumRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -53,6 +51,7 @@ const CheckoutPage = () => {
     orderNumRef.current = null;
   };
 
+  // Handler principal du paiement avec Semoa
   const handleSemoaPayment = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsProcessing(true);
@@ -111,7 +110,7 @@ const CheckoutPage = () => {
               });
             }
           } catch {
-            // Non bloquant : si on ne parvient pas à vérifier, rien à faire
+            // Silencieux si erreur de vérification
           }
         }, 5000);
       } else if (result.success === false) {
@@ -141,7 +140,7 @@ const CheckoutPage = () => {
         <h1 className="title text-center mb-8">Paiement</h1>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
-            <form className="space-y-6" autoComplete="off" onSubmit={() => {}}>
+            <form className="space-y-6" autoComplete="off" onSubmit={handleSemoaPayment}>
               <ContactInfoForm
                 firstName={firstName}
                 lastName={lastName}
@@ -158,18 +157,30 @@ const CheckoutPage = () => {
                 setAddress={setAddress}
                 setNotes={setNotes}
               />
-              <PaymentMethodSection
-                paymentMethod={paymentMethod}
-                setPaymentMethod={setPaymentMethod}
-                mobileMoney={mobileMoney}
-                setMobileMoney={setMobileMoney}
-              />
-              <div className="flex gap-4">
+              <div className="bg-white p-6 rounded-lg shadow-md">
+                <h2 className="text-lg font-bold text-cornerstone-blue mb-4">Paiement</h2>
+                <div className="space-y-2 mb-4">
+                  <label htmlFor="mobileNumber" className="block text-sm font-medium text-cornerstone-blue">
+                    Numéro Mobile Money
+                  </label>
+                  <input
+                    type="text"
+                    id="mobileNumber"
+                    placeholder="Ex: +228XXXXXXXX"
+                    value={mobileMoney}
+                    onChange={e => setMobileMoney(e.target.value)}
+                    required
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cornerstone-orange"
+                  />
+                  <span className="text-xs text-cornerstone-gray">
+                    Vous recevrez une notification sur votre téléphone pour confirmer le paiement.
+                  </span>
+                </div>
                 <Button
-                  type="button"
+                  type="submit"
                   disabled={isProcessing}
-                  onClick={handleSemoaPayment}
-                  className="w-full bg-cornerstone-orange hover:bg-cornerstone-orange/90 text-white"
+                  variant="orange"
+                  className="w-full"
                 >
                   {isProcessing ? <>Traitement en cours...</> : <>Payer avec Cash Pay</>}
                 </Button>
